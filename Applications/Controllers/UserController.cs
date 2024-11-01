@@ -19,6 +19,18 @@ namespace Applications.Controllers
             return View();
         }
 
+        [Authorize(Policy = "BasicLicensePolicy")]
+        public IActionResult BasicPage()
+        {
+            return View();
+        }
+
+        [Authorize(Policy = "PremiumLicensePolicy")]
+        public IActionResult PremiumPage()
+        {
+            return View();
+        }
+
         [Authorize]
         public IActionResult Privacy()
         {

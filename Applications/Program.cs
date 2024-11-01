@@ -1,5 +1,8 @@
+using Applications.Authorization;
 using Applications.Data;
+using Applications.LicenseAuthorization;
 using Applications.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,6 +13,14 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddDbContext<DBContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
 );
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("BasicLicensePolicy", policy =>
+        policy.Requirements.Add(new BasicLicense()));
+
+    options.AddPolicy("PremiumLicensePolicy", policy =>
+        policy.Requirements.Add(new PremiumLicense()));
+});
 builder.Services.AddControllersWithViews();
 
 builder.Services.AddIdentity<Users, IdentityRole>(options =>
@@ -25,6 +36,9 @@ builder.Services.AddIdentity<Users, IdentityRole>(options =>
 })
 .AddEntityFrameworkStores<DBContext>()
 .AddDefaultTokenProviders();
+
+builder.Services.AddScoped<IAuthorizationHandler, BasicLicenseHandler>();
+builder.Services.AddScoped<IAuthorizationHandler, PremiumLicenseHandler>();
 
 var app = builder.Build();
 
@@ -53,5 +67,10 @@ using (var scope = app.Services.CreateScope())
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Account}/{action=Login}");
+app.MapControllerRoute(
+    name: "accessDenied",
+    pattern: "AccessDenied",
+    defaults: new { controller = "Account", action = "AccessDenied" });
+
 
 app.Run();
