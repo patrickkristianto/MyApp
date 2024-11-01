@@ -1,0 +1,25 @@
+﻿@using Applications.ViewModel
+@model AssignLicenseVM
+@{
+    ViewData["Title"] = "Assign License";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<h2>@ViewData["Title"]</h2>
+
+<form asp-action="AssignLicense" method="post">
+    <div class="mb-3">
+        <label asp-for="Licensekey" class="form-label"></label>
+        <input asp-for="Licensekey" class="form-control" readonly />
+    </div>
+
+    <div class="form-group">
+        <label for="userId">User (optional)</label>
+        <select asp-for="UserId" asp-items="Model.UserList" class="form-control">
+            <option value="">Select a user</option>
+            @* The options are dynamically populated from Model.UserList *@
+        </select>
+    </div>
+
+    <button type="submit" class="btn btn-success">Assign License</button>
+</form>

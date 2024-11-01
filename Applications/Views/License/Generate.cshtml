@@ -1,0 +1,29 @@
+﻿@using Applications.ViewModel
+@model GenerateLicenseVM
+@{
+    ViewData["Title"] = "Generate License";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<h2>@ViewData["Title"]</h2>
+
+<form asp-action="Generate" method="post">
+    <div class="form-group">
+        <label for="userId">User (optional)</label>
+        <select asp-for="UserId" asp-items="Model.UserList" class="form-control">
+            <option value="">Select a user</option>
+            @* The options are dynamically populated from Model.UserList *@
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label for="licenseType">License Type <span class="text-danger">*</span></label>
+        <select asp-for="LicenseType" class="form-control" required>
+            <option value="">Select a license type</option>
+            <option value="Basic">Basic</option>
+            <option value="Premium">Premium</option>
+        </select>
+    </div>
+
+    <button type="submit" class="btn btn-success">Generate License</button>
+</form>
