@@ -1,0 +1,47 @@
+﻿@using Applications.ViewModel;
+@model RegisterVM
+@{
+    ViewData["Title"] = "Register";
+    Layout = "~/Views/Shared/_AccountLayout.cshtml";
+}
+<div class="account-background">
+    <div class="account-boxview">
+        <h2 class="text-center mb-4">Register</h2>
+        <form asp-action="Register" method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger" ></div>
+            <div class="mb-3">
+                <label asp-for="name" class="form-label"></label>
+                <input asp-for="name" class="form-control" />
+                <span asp-validation-for="name" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="email" class="form-label"></label>
+                <input asp-for="email" class="form-control" />
+                <span asp-validation-for="email" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="password" class="form-label"></label>
+                <input asp-for="password" class="form-control" />
+                <span asp-validation-for="password" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="confirmpassword" class="form-label"></label>
+                <input asp-for="confirmpassword" class="form-control" />
+                <span asp-validation-for="confirmpassword" class="text-danger"></span>
+            </div>
+            <input type="submit" value="Register" class="btn btn-success w-100 p-2" />
+            <p class="text-center mt-2">
+                Already have an account?<a asp-controller="Account" asp-action="Login" class="text-decoration-none"> Login</a>
+            </p>
+            <div class="text-center">
+                <a asp-controller="Home" asp-action="Index" class="text-decoration-none mt-3">Back</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial.cshtml");
+    }
+}

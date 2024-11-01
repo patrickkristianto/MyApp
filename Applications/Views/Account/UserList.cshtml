@@ -1,0 +1,39 @@
+﻿@using Applications.ViewModel;
+@using Microsoft.AspNetCore.Identity
+@model IEnumerable<UserListVM>
+@{
+    ViewData["Title"] = "User List";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="container">
+    <h2>User List</h2>
+    <table class="table table-striped table-bordered">
+        <thead class="table-light">
+            <tr>
+                <th>Full Name</th>
+                <th>Email</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var userRole in Model)
+            {
+                var user = userRole.User;
+                var isAdmin = userRole.Roles.Contains("Admin");
+
+                <tr>
+                    <td>@user.FullName</td>
+                    <td>@user.Email</td>
+                    <td>
+                        <a class="btn btn-warning btn-sm" asp-action="EditUser" asp-route-id="@user.Id">Edit</a>
+                        @if (!isAdmin)
+                        {
+                            <a class="btn btn-danger btn-sm" asp-action="DeleteUser" asp-route-id="@user.Id" onclick="return confirm('Are you sure you want to delete this user?');">Delete</a>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

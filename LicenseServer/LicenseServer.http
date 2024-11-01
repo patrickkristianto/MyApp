@@ -1,0 +1,6 @@
+@LicenseServer_HostAddress = http://localhost:5258
+
+GET {{LicenseServer_HostAddress}}/api/licenses
+Accept: application/json
+
+###
