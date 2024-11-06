@@ -24,5 +24,6 @@ namespace Applications.ViewModel
         [DataType(DataType.Password)]
         [Display(Name = "Confirm Password")]
         public string ConfirmPassword { get; set; }
+        //test
     }
 }
