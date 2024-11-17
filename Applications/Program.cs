@@ -1,6 +1,4 @@
-using Applications.Authorization;
 using Applications.Data;
-using Applications.LicenseAuthorization;
 using Applications.Models;
 using Applications.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -14,21 +12,9 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddDbContext<DBContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
 );
-builder.Services.AddAuthorization(options =>
-{
-    options.AddPolicy("BasicLicensePolicy", policy =>
-        policy.Requirements.Add(new BasicLicense()));
 
-    options.AddPolicy("PremiumLicensePolicy", policy =>
-        policy.Requirements.Add(new PremiumLicense()));
-});
-builder.Services.AddHttpClient<LicenseServices>(client =>
-{
-    client.BaseAddress = new Uri("https://localhost:7010/");
-});
+builder.Services.AddHttpClient<LicenseServices>();
 
-builder.Services.AddScoped<IAuthorizationHandler, BasicLicenseHandler>();
-builder.Services.AddScoped<IAuthorizationHandler, PremiumLicenseHandler>();
 builder.Services.AddControllersWithViews();
 
 
