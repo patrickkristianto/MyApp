@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace LicenseServer.Migrations
 {
     /// <inheritdoc />
-    public partial class UpdateLicenseUserId : Migration
+    public partial class AddRevokeLicenses : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -24,6 +24,7 @@ namespace LicenseServer.Migrations
                     SubscriptionLevel = table.Column<string>(maxLength: 50, nullable: false),
                     ExpirationDate = table.Column<DateTime>(nullable: false),
                     IsActive = table.Column<bool>(nullable: false),
+                    IsRevoked = table.Column<bool>(nullable: false),
                     UserId = table.Column<string>(nullable: true)
                 },
                 constraints: table =>

@@ -9,6 +9,7 @@ namespace Applications.ViewModel
         public string subscriptionLevel { get;set; }
         public DateTime expirationDate { get;set; }
         public bool isActive { get;set; }
+        public bool isRevoked { get;set; }
         public string userId { get;set; }
         public Users users { get;set; }
     }

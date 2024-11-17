@@ -1,0 +1,26 @@
+﻿@using Applications.ViewModel
+@model BuyLicensesVM
+@{
+    ViewData["Title"] = "Buy License";
+    Layout = "~/Views/Shared/_UserLayout.cshtml";
+}
+
+<h2>@ViewData["Title"]</h2>
+
+<form asp-action="BuyLKeys" method="post">
+    <div class="form-group">
+        <label for="userId">Full Name</label>
+        <input asp-for="Name" class="form-control" readonly />
+    </div>
+
+    <div class="form-group">
+        <label for="licenseType">License Type <span class="text-danger">*</span></label>
+        <select asp-for="LicenseType" class="form-control" required>
+            <option value="">Select a license type</option>
+            <option value="Basic">Basic</option>
+            <option value="Premium">Premium</option>
+        </select>
+    </div>
+
+    <button type="submit" class="btn btn-success">Generate License</button>
+</form>

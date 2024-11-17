@@ -47,6 +47,8 @@ namespace LicenseServer.Models
                 entity.Property(e => e.IsActive)
                     .IsRequired();
 
+                entity.Property(e => e.IsRevoked)
+                    .IsRequired();
                 entity.HasOne(e => e.User)
                     .WithMany()
                     .HasForeignKey(e => e.UserId)

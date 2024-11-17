@@ -1,4 +1,5 @@
-﻿using LicenseServer.Models;
+﻿using Azure.Core;
+using LicenseServer.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel;
@@ -23,75 +24,65 @@ namespace LicenseServer.Controllers
         }
 
         [HttpGet("list")]
-        public async Task<IActionResult> GetLicenses()
+        public IActionResult GetLicenses([FromQuery] string? userId = null)
         {
-            var licenses = await _context.Licenses.ToListAsync();
-            return Ok(licenses);
+            var result = new List<Licenses>();
+            
+            var licenses = _context.Licenses.ToListAsync().Result.ToList();
+            if (licenses != null)
+            {
+                result = licenses;
+                if (!string.IsNullOrEmpty(userId))
+                {
+                    result = result.Where(_ => _.UserId != null && _.UserId == userId && !_.IsRevoked).ToList();
+                }
+            }
+            
+            return Ok(result);
         }
 
         [HttpPost("generate")]
-        public async Task<IActionResult> GenerateLicense([FromBody] LicenseCreateRequest request)
+        public async Task<IActionResult> GenerateLicense([FromBody] LicenseRequest request)
         {
-            Licenses newLicense = new Licenses
+            try
             {
-                LicenseKey = Guid.NewGuid().ToString(),
-                SubscriptionLevel = request.SubscriptionLevel,
-                ExpirationDate = DateTime.UtcNow.AddMonths(1),
-                UserId = null,
-                IsActive = false
-            };
-
-            if (!string.IsNullOrEmpty(request.UserId))
-            {
-                var user = await _context.Users.FindAsync(request.UserId);
-                if (user == null)
-                    return NotFound("User not found");
-
-                var activeLicense = await _context.Licenses
-                    .Where(l => l.UserId == user.Id && l.IsActive && l.ExpirationDate > DateTime.UtcNow)
-                    .FirstOrDefaultAsync();
-
-                if (activeLicense != null)
+                Licenses newLicense = new Licenses
                 {
-                    return Conflict("User already has an active license that has not expired.");
-                }
+                    LicenseKey = Guid.NewGuid().ToString(),
+                    SubscriptionLevel = request.SubscriptionLevel,
+                    UserId = null,
+                    IsRevoked = false
+                };
 
-                var expiredLicense = await _context.Licenses
-                    .Where(l => l.UserId == user.Id && !l.IsActive && l.ExpirationDate <= DateTime.UtcNow)
-                    .FirstOrDefaultAsync();
-
-                if (expiredLicense != null)
+                if (!string.IsNullOrEmpty(request.UserId))
                 {
-                    expiredLicense.IsActive = true;
-                    expiredLicense.ExpirationDate = DateTime.UtcNow.AddMonths(1);
-                    await _context.SaveChangesAsync();
-
-                    return Ok(new { LicenseKey = expiredLicense.LicenseKey, ExpirationDate = expiredLicense.ExpirationDate });
+                    var user = await _context.Users.FindAsync(request.UserId);
+                    if (user != null)
+                        newLicense.UserId = user.Id;
                 }
-
-                newLicense.UserId = user.Id;
-                newLicense.IsActive = true;
+                _context.Licenses.Add(newLicense);
+                await _context.SaveChangesAsync();
             }
-
-            _context.Licenses.Add(newLicense);
-            await _context.SaveChangesAsync();
-
-            return Ok(new { LicenseKey = newLicense.LicenseKey, ExpirationDate = newLicense.ExpirationDate });
+            catch(Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+            }
+            return Ok(new { isSuccess = true, errorMessage = string.Empty });
         }
 
-        [HttpPost("revoke")]
-        public async Task<IActionResult> RevokeLicense([FromBody] Key licenseKey)
-        {
-            var license = await _context.Licenses.FirstOrDefaultAsync(l => l.LicenseKey == licenseKey.Keys);
-            if (license == null) return NotFound("License not found");
+        //[HttpPost("revoke")]
+        //public async Task<IActionResult> RevokeLicense([FromBody] Key licenseKey)
+        //{
+        //    var license = await _context.Licenses.FirstOrDefaultAsync(l => l.LicenseKey == licenseKey.Keys);
+        //    if (license == null) return NotFound("License not found");
 
-            license.IsActive = false;
-            license.UserId = null;
-            license.UserId = null;
-            await _context.SaveChangesAsync();
+        //    license.IsActive = false;
+        //    license.UserId = null;
+        //    license.UserId = null;
+        //    await _context.SaveChangesAsync();
 
-            return Ok("License revoked successfully");
-        }
+        //    return Ok("License revoked successfully");
+        //}
 
         [HttpPost("assign")]
         public async Task<IActionResult> AssignLicense([FromBody] LicenseAssignRequest request)
@@ -102,34 +93,92 @@ namespace LicenseServer.Controllers
             if (license == null || user == null)
                 return NotFound("License or User not found");
 
-            var activeLicense = await _context.Licenses
-                .Where(l => l.UserId == user.Id && l.IsActive && l.ExpirationDate > DateTime.UtcNow)
-                .FirstOrDefaultAsync();
-
-            var expiredLicense = await _context.Licenses
-                .Where(l => l.UserId == user.Id && !l.IsActive && l.ExpirationDate <= DateTime.UtcNow)
-                .FirstOrDefaultAsync();
-
-            if (activeLicense != null)
-            {
-                return Conflict("User already has an active license that has not expired.");
-            }
-
-            if (expiredLicense != null)
-            {
-                expiredLicense.IsActive = true;
-                expiredLicense.ExpirationDate = DateTime.UtcNow.AddMonths(1);
-                await _context.SaveChangesAsync();
-
-                return Ok("Expired license renewed successfully.");
-            }
-
             license.UserId = user.Id;
-            license.IsActive = true;
-            license.ExpirationDate = DateTime.UtcNow.AddMonths(1);
             await _context.SaveChangesAsync();
 
             return Ok("License assigned to user successfully");
+        }
+
+        [HttpPost("checkinglicense")]
+        public async Task<IActionResult> checkinglicense([FromBody] LicenseRequest request)
+        {
+            bool data = false;
+            if(request.SubscriptionLevel == "Premium")
+            {
+                data = await _context.Licenses
+                .AnyAsync(l => l.UserId == request.UserId && l.IsActive && l.SubscriptionLevel == "Premium" && l.ExpirationDate > DateTime.UtcNow && !l.IsRevoked);
+            }
+            else if(request.SubscriptionLevel == "Basic")
+            {
+                data = await _context.Licenses
+                .AnyAsync(l => l.UserId == request.UserId && l.IsActive && (l.SubscriptionLevel == "Basic" || l.SubscriptionLevel == "Premium") && l.ExpirationDate > DateTime.UtcNow && !l.IsRevoked);
+            }
+            else
+            {
+                return BadRequest();
+            }
+            return Ok(new
+            {
+                IsAuthorized = data
+            });
+        }
+        [HttpPost("activatekey")]
+        public async Task<IActionResult> activatelicense([FromBody] Key key)
+        {
+            var license = await _context.Licenses.FirstOrDefaultAsync(l => l.LicenseKey == key.Keys);
+            if (license == null)
+            {
+                var result = new
+                {
+                    isSuccess = false,
+                    errorMessage = "License not found"
+                };
+                return Ok(result);
+
+            }
+            license.IsActive = true;
+            license.ExpirationDate = DateTime.UtcNow.AddMonths(1);
+            await _context.SaveChangesAsync();
+            return Ok(new { isSuccess = true, errorMessage = string.Empty});
+        }
+
+        [HttpPost("renewallicense")]
+        public async Task<IActionResult> renewlicenses([FromBody] RenewLicenses param)
+        {
+            var license = await _context.Licenses.FirstOrDefaultAsync(l => l.LicenseKey == param.Keys);
+            if (license == null)
+            {
+                var result = new
+                {
+                    isSuccess = false,
+                    errorMessage = "License not found"
+                };
+                return Ok(result);
+
+            }
+            license.ExpirationDate = param.duration;
+            await _context.SaveChangesAsync();
+            return Ok(new { isSuccess = true, errorMessage = string.Empty });
+        }
+
+        [HttpPost("revokelicense")]
+        public async Task<IActionResult> revokelicenses([FromBody] RenewLicenses param)
+        {
+            var license = await _context.Licenses.FirstOrDefaultAsync(l => l.LicenseKey == param.Keys);
+            if (license == null)
+            {
+                var result = new
+                {
+                    isSuccess = false,
+                    errorMessage = "License not found"
+                };
+                return Ok(result);
+
+            }
+            license.IsRevoked = true;
+            license.IsActive = false;
+            await _context.SaveChangesAsync();
+            return Ok(new { isSuccess = true, errorMessage = string.Empty });
         }
     }
 }

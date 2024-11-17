@@ -1,0 +1,22 @@
+﻿@using Applications.ViewModel
+@model RenewLicenseVM
+@{
+    ViewData["Title"] = "Renew License";
+    Layout = "~/Views/Shared/_UserLayout.cshtml";
+}
+
+<h2>@ViewData["Title"]</h2>
+
+<form asp-action="RenewLicenseSave" method="post">
+    <div class="mb-3">
+        <label asp-for="Licensekey" class="form-label"></label>
+        <input asp-for="Licensekey" class="form-control" readonly />
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Duration" class="form-label">Select Expiration Date</label>
+        <input asp-for="Duration" class="form-control" type="date" />
+    </div>
+
+    <button type="submit" class="btn btn-success">Renew License</button>
+</form>

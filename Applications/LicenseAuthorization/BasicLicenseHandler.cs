@@ -1,34 +1,52 @@
-﻿using Applications.Data;
+﻿using Applications.Models;
+using Applications.Services;
+using Azure;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Mvc.Filters;
 using System.Security.Claims;
-using System.Threading.Tasks;
 
 namespace Applications.LicenseAuthorization
 {
     public class BasicLicenseHandler : AuthorizationHandler<BasicLicense>
     {
-        private readonly DBContext _context;
+        private readonly LicenseServices _licenseServices;
 
-        public BasicLicenseHandler(DBContext context)
+        public BasicLicenseHandler(LicenseServices licenseServices)
         {
-            _context = context;
+            _licenseServices = licenseServices;
         }
 
         protected override async Task HandleRequirementAsync(AuthorizationHandlerContext context, BasicLicense requirement)
         {
-            var userId = context.User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId))
+            try
             {
-                return;
+                var userId = context.User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return;
+                }
+                var content = new
+                {
+                    UserId = userId,
+                    SubscriptionLevel = "Basic"
+                };
+                var response = await _licenseServices.PostData("checkinglicense", content);
+                if (response.IsSuccessStatusCode)
+                {
+                    var result = await response.Content.ReadFromJsonAsync<CheckingLicense>();
+                    if (result != null && result.IsAuthorized)
+                    {
+                        context.Succeed(requirement);
+                    }
+                }
             }
-
-            var hasBasicLicense = await _context.Licenses
-                .AnyAsync(l => l.UserId == userId && l.IsActive && (l.SubscriptionLevel == "Basic" || l.SubscriptionLevel == "Premium")&& l.ExpirationDate > DateTime.UtcNow);
-
-            if (hasBasicLicense)
+            catch (Exception ex)
             {
-                context.Succeed(requirement);
+                if (context.Resource is AuthorizationFilterContext filterContext)
+                {
+                    filterContext.HttpContext.Items["ErrorMessage"] = "The license server is currently unavailable. Please try again later.";
+                }
+                context.Fail();
             }
         }
     }

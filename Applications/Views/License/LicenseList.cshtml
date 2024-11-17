@@ -7,6 +7,13 @@
 
 <h2>@ViewData["Title"]</h2>
 
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger">
+        @TempData["ErrorMessage"]
+    </div>
+}
+
 <div class="mb-3">
     <a class="btn btn-success" href="@Url.Action("Generate", "License")">Generate License</a>
 </div>
@@ -19,6 +26,7 @@
             <th>Full Name</th>
             <th>Expiration Date</th>
             <th>Is Active</th>
+            <th>Is Revoked</th>
             <th>Actions</th>
         </tr>
     </thead>
@@ -38,18 +46,26 @@
                     {
                         <td></td>
                     }
-                    <td>@license.expirationDate.ToString("yyyy-MM-dd HH:mm")</td>
+                    <td>@(license.expirationDate == DateTime.MinValue ? "-" : license.expirationDate.ToString("yyyy-MM-dd"))</td>
                     <td>@(license.isActive ? "Yes" : "No")</td>
+                    <td>@(license.isRevoked ? "Yes" : "No")</td>
+
                     <td>
-                        <form method="post" action="@Url.Action("Revoke", "License")" class="d-inline">
-                            <input type="hidden" name="licensekey" value="@license.licenseKey" />
-                            <button type="submit" class="btn btn-danger btn-sm">Revoke</button>
-                        </form>
-                        <form method="post" action="@Url.Action("Assign", "License")" class="d-inline">
-                            <input type="hidden" name="userId" value="@license.userId" />
-                            <input type="hidden" name="licenseKey" value="@license.licenseKey" />
-                            <button type="submit" class="btn btn-primary btn-sm">Assign</button>
-                        </form>
+                        @if (!license.isRevoked)
+                        {
+                            <form method="post" action="@Url.Action("Revoke", "License")" class="d-inline">
+                                <input type="hidden" name="licensekey" value="@license.licenseKey" />
+                                <button type="submit" class="btn btn-danger btn-sm">Revoke</button>
+                            </form>
+                            @if (license.users == null)
+                            {
+                                <form method="post" action="@Url.Action("Assign", "License")" class="d-inline">
+                                    <input type="hidden" name="userId" value="@license.userId" />
+                                    <input type="hidden" name="licenseKey" value="@license.licenseKey" />
+                                    <button type="submit" class="btn btn-primary btn-sm">Assign</button>
+                                </form>
+                            }
+                        }
                     </td>
                 </tr>
             }

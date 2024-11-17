@@ -1,0 +1,78 @@
+﻿@using Applications.ViewModel
+@model List<LicenseVM>
+@{
+    ViewData["Title"] = "My Licenses";
+    Layout = "~/Views/Shared/_UserLayout.cshtml";
+
+    bool hasActiveLicense = Model?.Any(license => license.isActive) ?? false;
+}
+
+<h2>@ViewData["Title"]</h2>
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger">
+        @TempData["ErrorMessage"]
+    </div>
+}
+
+
+<div class="mb-3">
+    <a class="btn btn-success" href="@Url.Action("Buy", "User")">Buy License</a>
+</div>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>License Key</th>
+            <th>Subscription Level</th>
+            <th>Expiration Date</th>
+            <th>Is Active</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (Model != null && Model.Any())
+        {
+            foreach (var license in Model)
+            {
+                <tr>
+                    <td>@license.licenseKey</td>
+                    <td>@license.subscriptionLevel</td>
+                    <td>@(license.expirationDate == DateTime.MinValue ? "-" : license.expirationDate.ToString("yyyy-MM-dd"))</td>
+                    <td>@(license.isActive ? "Yes" : "No")</td>
+                    <td>
+                        @if (hasActiveLicense)
+                        {
+                            if (license.isActive)
+                            {
+                                <form method="post" action="@Url.Action("Revoke", "User")" class="d-inline">
+                                    <input type="hidden" name="licenseKey" value="@license.licenseKey" />
+                                    <button type="submit" class="btn btn-danger btn-sm">Revoke</button>
+                                </form>
+                                <form method="post" action="@Url.Action("RenewLicenses", "User")" class="d-inline">
+                                    <input type="hidden" name="existExpDate" value="@license.expirationDate" />
+                                    <input type="hidden" name="licenseKey" value="@license.licenseKey" />
+                                    <button type="submit" class="btn btn-primary btn-sm">Renewal</button>
+                                </form>
+                            }
+                        }
+                        else
+                        {
+                            <form method="post" action="@Url.Action("Activate", "User")" class="d-inline">
+                                <input type="hidden" name="licenseKey" value="@license.licenseKey" />
+                                <button type="submit" class="btn btn-success btn-sm">Activate</button>
+                            </form>
+                        }
+                    </td>
+                </tr>
+            }
+        }
+        else
+        {
+            <tr>
+                <td colspan="6" class="text-center">No licenses found.</td>
+            </tr>
+        }
+    </tbody>
+</table>

@@ -2,6 +2,7 @@ using Applications.Authorization;
 using Applications.Data;
 using Applications.LicenseAuthorization;
 using Applications.Models;
+using Applications.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -21,7 +22,15 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("PremiumLicensePolicy", policy =>
         policy.Requirements.Add(new PremiumLicense()));
 });
+builder.Services.AddHttpClient<LicenseServices>(client =>
+{
+    client.BaseAddress = new Uri("https://localhost:7010/");
+});
+
+builder.Services.AddScoped<IAuthorizationHandler, BasicLicenseHandler>();
+builder.Services.AddScoped<IAuthorizationHandler, PremiumLicenseHandler>();
 builder.Services.AddControllersWithViews();
+
 
 builder.Services.AddIdentity<Users, IdentityRole>(options =>
 {
@@ -37,8 +46,6 @@ builder.Services.AddIdentity<Users, IdentityRole>(options =>
 .AddEntityFrameworkStores<DBContext>()
 .AddDefaultTokenProviders();
 
-builder.Services.AddScoped<IAuthorizationHandler, BasicLicenseHandler>();
-builder.Services.AddScoped<IAuthorizationHandler, PremiumLicenseHandler>();
 
 var app = builder.Build();
 
@@ -47,6 +54,7 @@ if (!app.Environment.IsDevelopment())
     app.UseExceptionHandler("/Home/Error");
     app.UseHsts();
 }
+
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
@@ -71,6 +79,10 @@ app.MapControllerRoute(
     name: "accessDenied",
     pattern: "AccessDenied",
     defaults: new { controller = "Account", action = "AccessDenied" });
+app.MapControllerRoute(
+    name: "errorPage",
+    pattern: "ErrorPage",
+    defaults: new { controller = "Shared", action = "ErrorPage" });
 
 
 app.Run();

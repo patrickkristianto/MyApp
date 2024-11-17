@@ -31,6 +31,8 @@ namespace Applications.Data
 
                 entity.Property(e => e.IsActive)
                     .IsRequired();
+                entity.Property(e => e.IsRevoked)
+                    .IsRequired();
             });
         }
     }

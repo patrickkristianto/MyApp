@@ -1,41 +1,50 @@
 ﻿using Applications.Models;
+using Applications.Services;
 using Applications.ViewModel;
+using Azure.Core;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
+using System.Net.Http;
 
 public class LicenseController : Controller
 {
-    private readonly HttpClient _httpClient;
+    private readonly LicenseServices _licenseServices;
     private readonly UserManager<Users> uM;
+    private readonly IMemoryCache _cache;
 
-
-    public LicenseController(HttpClient httpClient, UserManager<Users> uM)
+    public LicenseController(LicenseServices licenseServices, UserManager<Users> uM)
     {
-        _httpClient = httpClient;
+        _licenseServices = licenseServices;
         this.uM = uM;
     }
     [Authorize(Roles = "Admin")]
     [HttpGet]
     public async Task<IActionResult> LicenseList()
     {
-        var licenses = await _httpClient.GetFromJsonAsync<List<LicenseVM>>("https://localhost:7010/api/licenses/list");
         var licensesWithFullName = new List<LicenseVM>();
-
-        foreach (var license in licenses)
+        var response = await _licenseServices.GetData("list");
+        if (response.IsSuccessStatusCode)
         {
-            if (!string.IsNullOrEmpty(license.userId))
+            var licenses = await response.Content.ReadFromJsonAsync<List<LicenseVM>>();
+            if(licenses != null)
             {
-                var user = await uM.Users
-                                   .FirstOrDefaultAsync(u => u.Id == license.userId);
-                license.users = user;
+                foreach (var license in licenses)
+                {
+                    if (!string.IsNullOrEmpty(license.userId))
+                    {
+                        var user = await uM.Users
+                                           .FirstOrDefaultAsync(u => u.Id == license.userId);
+                        license.users = user;
+                    }
+                    licensesWithFullName.Add(license);
+                }
             }
-
-            licensesWithFullName.Add(license);
         }
-
         return View(licensesWithFullName);
     }
     [Authorize(Roles = "Admin")]
@@ -66,8 +75,7 @@ public class LicenseController : Controller
             UserId = userId,
             SubscriptionLevel = licenseType
         };
-
-        var response = await _httpClient.PostAsJsonAsync("https://localhost:7010/api/licenses/generate", request); 
+        var response = await _licenseServices.PostData("generate", request);
         if (response.IsSuccessStatusCode)
         {
             return RedirectToAction("LicenseList", "License");
@@ -80,17 +88,45 @@ public class LicenseController : Controller
     [HttpPost]
     public async Task<IActionResult> Revoke(string licensekey)
     {
-        var content = new
+        try
         {
-            Keys = licensekey
-        };
-        var response = await _httpClient.PostAsJsonAsync("https://localhost:7010/api/licenses/revoke", content);
-        if (response.IsSuccessStatusCode)
+            var content = new
+            {
+                Keys = licensekey
+            };
+            var response = await _licenseServices.PostData("revokelicense", content);
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<ServiceOperation>();
+                if (result != null)
+                {
+                    if (result.isSuccess)
+                        return RedirectToAction("LicenseList", "License");
+                    else
+                    {
+                        TempData["ErrorMessage"] = result.errorMessage;
+                        return RedirectToAction("LicenseList", "License");
+                    }
+
+                }
+                else
+                {
+                    TempData["ErrorMessage"] = "An error happened. Please try again.";
+                    return RedirectToAction("LicenseList", "License");
+                }
+            }
+            else
+            {
+                TempData["ErrorMessage"] = "The license server is currently unavailable. Please try again later.";
+                return RedirectToAction("LicenseList", "License");
+
+            }
+        }
+        catch
         {
+            TempData["ErrorMessage"] = "The license server is currently unavailable. Please try again later.";
             return RedirectToAction("LicenseList", "License");
         }
-        ViewBag.Message = "Error revoking license.";
-        return RedirectToAction("LicenseList", "License");
     }
 
     [Authorize(Roles = "Admin")]
@@ -119,7 +155,8 @@ public class LicenseController : Controller
             LicenseKey = licenseKey,
             UserId = userId
         };
-        var response = await _httpClient.PostAsJsonAsync("https://localhost:7010/api/licenses/assign", content);
+        var response = await _licenseServices.PostData("assign", content);
+
         if (response.IsSuccessStatusCode)
         {
             return RedirectToAction("LicenseList", "License");
@@ -127,4 +164,5 @@ public class LicenseController : Controller
         ViewBag.Message = "Error assigning license.";
         return RedirectToAction("LicenseList", "License");
     }
+    
 }

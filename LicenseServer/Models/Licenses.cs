@@ -10,6 +10,7 @@ namespace LicenseServer.Models
         public string SubscriptionLevel { get; set; }
         public DateTime ExpirationDate { get; set; }
         public bool IsActive { get; set; }
+        public bool IsRevoked { get; set; }
         public string? UserId { get; set; }
         public virtual AspNetUser? User { get; set; }
     }

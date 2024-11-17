@@ -14,6 +14,7 @@ public partial class License
     public DateTime ExpirationDate { get; set; }
 
     public bool IsActive { get; set; }
+    public bool IsRevoked { get; set; }
 
     public string? UserId { get; set; }
 }

@@ -31,6 +31,15 @@ namespace Applications.Controllers
             return View();
         }
 
+        public IActionResult ErrorPage()
+        {
+            if (TempData.ContainsKey("ErrorMessage"))
+            {
+                ViewData["ErrorMessage"] = TempData["ErrorMessage"];
+            }
+            return View();
+        }
+
         [HttpPost]
         public async Task<IActionResult> Login(LoginVM vm)
         {

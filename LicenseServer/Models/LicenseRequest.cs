@@ -1,6 +1,6 @@
 ﻿namespace LicenseServer.Models
 {
-    public class LicenseCreateRequest
+    public class LicenseRequest
     {
         public string UserId { get; set; }
         public string SubscriptionLevel { get; set; }
