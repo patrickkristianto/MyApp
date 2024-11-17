@@ -111,17 +111,25 @@ namespace Applications.Controllers
         {
             var licensesWithFullName = new List<LicenseVM>();
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-            var response = await _licenseServices.GetData($"list?userId={userId}");
-            if (response.IsSuccessStatusCode)
+            try
             {
-                var licenses = await response.Content.ReadFromJsonAsync<List<LicenseVM>>();
-                if (licenses != null)
+
+                var response = await _licenseServices.GetData($"list?userId={userId}");
+                if (response.IsSuccessStatusCode)
                 {
-                    licensesWithFullName = licenses;
+                    var licenses = await response.Content.ReadFromJsonAsync<List<LicenseVM>>();
+                    if (licenses != null)
+                    {
+                        licensesWithFullName = licenses;
+                    }
                 }
+                return View(licensesWithFullName);
             }
-            return View(licensesWithFullName);
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = "The license server is currently unavailable. Please try again later.";
+                return RedirectToAction("ErrorPage", "Account");
+            }
         }
         [Authorize]
         [HttpPost]
